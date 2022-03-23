@@ -20,6 +20,7 @@
   - Quando mexemos em um lugar e afeta vários outros lugares
 - Long Parameter List
   - Quando temos muitos parâmetros
+- Primitive Obsession
 
 ## Design Patterns/Principles/Conventions
 
