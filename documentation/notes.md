@@ -21,6 +21,7 @@
 - Long Parameter List
   - Quando temos muitos parâmetros
 - Primitive Obsession
+- Bad Naming
 
 ## Design Patterns/Principles/Conventions
 
@@ -39,3 +40,4 @@
 - Sustem Under Test (SUT)
 - Strategy Pattern
 - Factory Pattern
+- Clean Code
