@@ -18,6 +18,8 @@
   - Código duplicado
 - Shotgun Surgery
   - Quando mexemos em um lugar e afeta vários outros lugares
+- Long Parameter List
+  - Quando temos muitos parâmetros
 
 ## Design Patterns/Principles/Conventions
 
@@ -35,3 +37,4 @@
 - Small Commits
 - Sustem Under Test (SUT)
 - Strategy Pattern
+- Factory Pattern
