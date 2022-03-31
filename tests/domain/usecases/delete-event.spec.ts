@@ -2,6 +2,7 @@ class DeleteEvent {
   constructor(
     private readonly loadGroupRepository: LoadGroupRepository,
     private readonly deleteEventRepository: DeleteEventRepository,
+    private readonly deleteMatchRepository: DeleteMatchRepository,
   ) {}
 
   async perform({ id, userId }: { id: string; userId: string }): Promise<void> {
@@ -16,15 +17,18 @@ class DeleteEvent {
       throw new Error('User is not have permission to delete event');
     }
     await this.deleteEventRepository.delete({ id });
+    await this.deleteMatchRepository.delete({ eventId: id });
   }
 }
 
 interface LoadGroupRepository {
   load: (input: { eventId: string }) => Promise<Group | undefined>;
 }
-
 interface DeleteEventRepository {
   delete: (input: { id: string }) => Promise<void>;
+}
+interface DeleteMatchRepository {
+  delete: (input: { eventId: string }) => Promise<void>;
 }
 
 type GrouUser = {
@@ -58,18 +62,38 @@ class DeleteEventRepositoryMock implements DeleteEventRepository {
     this.callsCount++;
   }
 }
+class DeleteMatchRepositoryMock implements DeleteMatchRepository {
+  eventId?: string;
+  callsCount = 0;
+
+  async delete({ eventId }: { eventId: string }): Promise<void> {
+    this.eventId = eventId;
+    this.callsCount++;
+  }
+}
 
 type SutTypes = {
   sut: DeleteEvent;
   loadGroupRepository: LoadGroupRepositorySpy;
   deleteEventRepository: DeleteEventRepositoryMock;
+  deleteMatchRepository: DeleteMatchRepositoryMock;
 };
 
 const makeSut = (): SutTypes => {
   const loadGroupRepository = new LoadGroupRepositorySpy();
   const deleteEventRepository = new DeleteEventRepositoryMock();
-  const sut = new DeleteEvent(loadGroupRepository, deleteEventRepository);
-  return { sut, loadGroupRepository, deleteEventRepository };
+  const deleteMatchRepository = new DeleteMatchRepositoryMock();
+  const sut = new DeleteEvent(
+    loadGroupRepository,
+    deleteEventRepository,
+    deleteMatchRepository,
+  );
+  return {
+    sut,
+    loadGroupRepository,
+    deleteEventRepository,
+    deleteMatchRepository,
+  };
 };
 
 describe('DeleteEvent', () => {
@@ -166,5 +190,17 @@ describe('DeleteEvent', () => {
 
     expect(deleteEventRepository.id).toBe(id);
     expect(deleteEventRepository.callsCount).toBe(1);
+  });
+
+  it('should delete matches', async () => {
+    const { sut, deleteMatchRepository } = makeSut();
+
+    await sut.perform({
+      id,
+      userId,
+    });
+
+    expect(deleteMatchRepository.eventId).toBe(id);
+    expect(deleteMatchRepository.callsCount).toBe(1);
   });
 });
