@@ -2,21 +2,26 @@ class DeleteEvent {
   constructor(private readonly loadGroupRepository: LoadGroupRepository) {}
 
   async perform({ id }: { id: string; userId: string }): Promise<void> {
-    this.loadGroupRepository.load({ eventId: id });
+    const group = this.loadGroupRepository.load({ eventId: id });
+    if (group === undefined) {
+      throw new Error('Group not found');
+    }
   }
 }
 
 interface LoadGroupRepository {
-  load: (input: { eventId: string }) => Promise<void>;
+  load: (input: { eventId: string }) => Promise<any>;
 }
 
 class LoadGroupRepositoryMock implements LoadGroupRepository {
   eventId?: string;
   callsCount = 0;
+  output: any = 'any_value';
 
-  async load({ eventId }: { eventId: string }): Promise<void> {
+  async load({ eventId }: { eventId: string }): Promise<any> {
     this.eventId = eventId;
     this.callsCount++;
+    return this.output;
   }
 }
 
@@ -45,5 +50,17 @@ describe('DeleteEvent', () => {
 
     expect(loadGroupRepository.eventId).toBe(id);
     expect(loadGroupRepository.callsCount).toBe(1);
+  });
+
+  it('should throw if eventId is invalid', async () => {
+    const { sut, loadGroupRepository } = makeSut();
+    loadGroupRepository.output = undefined;
+
+    const promise = sut.perform({
+      id,
+      userId,
+    });
+
+    await expect(promise).rejects.toThrowError();
   });
 });
