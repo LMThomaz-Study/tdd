@@ -1,5 +1,8 @@
 class DeleteEvent {
-  constructor(private readonly loadGroupRepository: LoadGroupRepository) {}
+  constructor(
+    private readonly loadGroupRepository: LoadGroupRepository,
+    private readonly deleteEventRepository: DeleteEventRepository,
+  ) {}
 
   async perform({ id, userId }: { id: string; userId: string }): Promise<void> {
     const group = await this.loadGroupRepository.load({ eventId: id });
@@ -12,11 +15,16 @@ class DeleteEvent {
     if (group.users.find((user) => user.id === userId)?.permission === 'user') {
       throw new Error('User is not have permission to delete event');
     }
+    await this.deleteEventRepository.delete({ id });
   }
 }
 
 interface LoadGroupRepository {
   load: (input: { eventId: string }) => Promise<Group | undefined>;
+}
+
+interface DeleteEventRepository {
+  delete: (input: { id: string }) => Promise<void>;
 }
 
 type GrouUser = {
@@ -41,16 +49,27 @@ class LoadGroupRepositorySpy implements LoadGroupRepository {
     return this.output;
   }
 }
+class DeleteEventRepositoryMock implements DeleteEventRepository {
+  id?: string;
+  callsCount = 0;
+
+  async delete({ id }: { id: string }): Promise<void> {
+    this.id = id;
+    this.callsCount++;
+  }
+}
 
 type SutTypes = {
   sut: DeleteEvent;
   loadGroupRepository: LoadGroupRepositorySpy;
+  deleteEventRepository: DeleteEventRepositoryMock;
 };
 
 const makeSut = (): SutTypes => {
   const loadGroupRepository = new LoadGroupRepositorySpy();
-  const sut = new DeleteEvent(loadGroupRepository);
-  return { sut, loadGroupRepository };
+  const deleteEventRepository = new DeleteEventRepositoryMock();
+  const sut = new DeleteEvent(loadGroupRepository, deleteEventRepository);
+  return { sut, loadGroupRepository, deleteEventRepository };
 };
 
 describe('DeleteEvent', () => {
@@ -135,5 +154,17 @@ describe('DeleteEvent', () => {
     });
 
     await expect(promise).resolves.not.toThrowError();
+  });
+
+  it('should delete event', async () => {
+    const { sut, deleteEventRepository } = makeSut();
+
+    await sut.perform({
+      id,
+      userId,
+    });
+
+    expect(deleteEventRepository.id).toBe(id);
+    expect(deleteEventRepository.callsCount).toBe(1);
   });
 });
