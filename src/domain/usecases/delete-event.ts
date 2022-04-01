@@ -13,15 +13,8 @@ export class DeleteEvent {
 
   async perform({ id, userId }: { id: string; userId: string }): Promise<void> {
     const group = await this.loadGroupRepository.load({ eventId: id });
-    if (group === undefined) {
-      throw new Error('Group not found');
-    }
-    if (group.users.find((user) => user.id === userId) === undefined) {
-      throw new Error('User not found');
-    }
-    if (group.users.find((user) => user.id === userId)?.permission === 'user') {
-      throw new Error('User is not have permission to delete event');
-    }
+    if (group === undefined) throw new Error('Group not found');
+    if (!group.isAdmin(userId)) throw new Error('User is not admin');
     await this.deleteEventRepository.delete({ id });
     await this.deleteMatchRepository.delete({ eventId: id });
   }
